@@ -1,28 +1,30 @@
+import sys
+sys.stdout.reconfigure(encoding='utf-8')# main.py
 import asyncio
+import logging
+from aiogram import Bot, Dispatcher
+from config import BOT_TOKEN
+from handlers import router
 
-# Вручную создаем и устанавливаем цикл событий для Pyrogram
-try:
-    asyncio.get_event_loop()
-except RuntimeError:
-    asyncio.set_event_loop(asyncio.new_event_loop())
+async def main():
+    # Включаем логирование, чтобы видеть ошибки в терминале
+    logging.basicConfig(level=logging.INFO)
+    
+    # Инициализируем бота и диспетчер
+    bot = Bot(token=BOT_TOKEN)
+    dp = Dispatcher()
+    
+    # Подключаем роутер с нашими обработчиками
+    dp.include_router(router)
+    
+    print("🚀 Бот успешно запущен!")
+    
+    # Пропускаем старые сообщения и запускаем опрос
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
 
-# А уже дальше идут ваши обычные импорты
-from pyrogram.raw import functions, types
-# ... остальной ваш код ...
-
-from pyrogram.raw import functions, types
-from pyrogram import Client, idle
-from config import Config
-
-bot = Client(
-    "bot",
-    bot_token=Config.BOT_TOKEN,
-    api_id=Config.API_ID,
-    api_hash=Config.API_HASH,
-    workers=50,
-    plugins=dict(root="plugins")
-)
-bot.start()
-print("Bot Started ⚡")
-idle()
-bot.stop()
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Бот остановлен вручную.")

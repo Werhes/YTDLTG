@@ -1,7 +1,0 @@
-pyrogram
-pymongo[srv]==3.12.3
-aiohttp
-pydub
-pytube
-tgcrypto
-ffmpeg

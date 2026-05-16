@@ -20,7 +20,7 @@
 __Clone the repository__
 
 ```
-git clone https://github.com/kalanakt/video-defuser.git
+git clone https://github.com/Werhes/YTDLTG.git
 ```
 or 
 

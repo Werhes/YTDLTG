@@ -45,45 +45,48 @@ async def handle_url(message: Message, state: FSMContext):
     await state.update_data(url=message.text)
     await message.answer("🔗 Ссылочка принята! Выбери форматоchek и качество:", reply_markup=get_format_kb())
 
-# Обрабатываем нажатия на кнопки форматов
+# Обрабатываем нажатия на кнопки (выбор формата)
 @router.callback_query(F.data.startswith("dl_"))
 async def handle_format_selection(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     url = data.get("url")
     
     if not url:
-        await callback.message.edit_text("❌ Ссылка потеряна из памяти чел. Отправь её заново.")
+        await callback.message.edit_text("❌ Ссылка устарела. Отправь ее заново.")
         return
 
+    # ВОТ ТА САМАЯ СТРОКА, КОТОРАЯ СЛУЧАЙНО УДАЛИЛАСЬ:
+    format_type = callback.data.replace("dl_", "")
+    
     # Выводим кнопку отмены во время скачивания
     await callback.message.edit_text("⏳ Начинаю скачивание... Пожалуйста, подожди.", reply_markup=get_cancel_kb())
 
     try:
-        # Скачиваем файл
+        # Запускаем загрузку
         file_path = await download_media(url, format_type, callback.from_user.id)
         
-        # Проверяем размер (Телеграм пропускает только до 50 МБ через обычный API)
+        # Проверяем размер файла
         file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
         if file_size_mb > MAX_SIZE_MB:
             await callback.message.edit_text(
-                f"❌ Файл слишком большой ({file_size_mb:.1f} МБ).\n"
-                f"Лимит Telegram: 50 МБ. Попробуй выбрать качество похуже."
+                f"❌ Файл слишком большой ({file_size_mb:.1f} MB).\n"
+                f"Лимит Telegram: 50 MB. Попробуй выбрать качество похуже."
             )
             os.remove(file_path)
             return
 
-        await callback.message.edit_text("📤 Файл скачан на компик @WerhesDev! Отправляю тебе...")
+        await callback.message.edit_text("📤 Файл готов! Отправляю в чат...")
         
-        # Отправляем файл пользователю
+        # Отправляем файл
         media_file = FSInputFile(file_path)
         if format_type == "mp3":
             await callback.message.answer_audio(media_file)
         else:
             await callback.message.answer_video(media_file)
             
-        await callback.message.delete() # Удаляем техническое сообщение
+        await callback.message.delete()
         
-        # Подчищаем за собой
+        # Удаляем файл с жесткого диска после отправки
         os.remove(file_path)
         await state.clear()
 
@@ -92,9 +95,3 @@ async def handle_format_selection(callback: CallbackQuery, state: FSMContext):
             await callback.message.edit_text("🛑 Скачивание отменено пользователем.")
         else:
             await callback.message.edit_text(f"❌ Ошибка скачивания: {str(e)[:150]}")
-            # Обработка нажатия на кнопку "Отмена"
-@router.callback_query(F.data == "cancel_dl")
-async def process_cancel(callback: CallbackQuery):
-    # Добавляем ID пользователя в список на отмену
-    CANCEL_TASKS.add(callback.from_user.id)
-    await callback.answer("🛑 Отменяю... Подождите пару секунд.", show_alert=True)

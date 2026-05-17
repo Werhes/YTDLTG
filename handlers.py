@@ -37,13 +37,17 @@ async def handle_support(callback: CallbackQuery):
     await callback.message.answer(text, parse_mode="Markdown")
     await callback.answer() # Обязательно: закрывает "часики" загрузки на самой кнопке
 
-# ... дальше идет твой старый код @router.message(F.text.regexp...
-# Ловим ссылки на YouTube
-@router.message(F.text.regexp(r'(https?://)?(www\.)?(youtube\.com|youtu\.?be)/.+'))
+# Ловим ссылки на YouTube, Instagram и Pinterest
+@router.message(F.text.regexp(r'(https?://)?(www\.)?(youtube\.com|youtu\.?be|instagram\.com|pinterest\.com|pin\.it)/.+'))
 async def handle_url(message: Message, state: FSMContext):
-    # Сохраняем ссылку в память бота для конкретного пользователя
+    # Запоминаем ссылку в память состояний для конкретного пользователя
     await state.update_data(url=message.text)
-    await message.answer("🔗 Ссылочка принята! Выбери форматоchek и качество:", reply_markup=get_format_kb())
+    await message.answer(
+        "🔗 Ссылка принята! Выбери формат:\n"
+        "*(Для Instagram и Pinterest просто выбирай 1080p — бот скачает максимальное доступное качество)*", 
+        reply_markup=get_format_kb(),
+        parse_mode="Markdown"
+    )
 
 # Обрабатываем нажатия на кнопки (выбор формата)
 @router.callback_query(F.data.startswith("dl_"))
